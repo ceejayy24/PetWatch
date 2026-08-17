@@ -1,0 +1,548 @@
+/* Page body, header(navbar) and footer */
+main > .container {
+    background: linear-gradient(
+            90deg,
+            rgb(39, 61, 81) 0%,
+            rgb(33, 73, 115) 25%,
+            rgb(34, 96, 152) 50%,
+            rgb(43, 126, 184) 75%,
+            rgb(57, 157, 205) 100%
+    );
+}
+
+html {
+    height: 100%;
+    margin: 0;
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100%;
+    margin: 0;
+    font-family: "Segoe UI", serif;
+    overflow-x: hidden;
+    padding-top: 70px;
+}
+
+body {
+    /* Paw-print bg overlay (SVG image) */
+    background-image:
+            url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='10' y='70' font-size='60' opacity='0.05'>🐾</text></svg>"),
+            linear-gradient(
+                    90deg,
+                    rgb(39, 61, 81) 0%,
+                    rgb(33, 73, 115) 25%,
+                    rgb(34, 96, 152) 50%,
+                    rgb(43, 126, 184) 75%,
+                    rgb(57, 157, 205) 100%
+            );
+    background-size:
+            100px 100px,
+            cover;
+    background-repeat: repeat, no-repeat;
+    background-attachment: fixed;
+}
+
+#title {
+    margin-top: 12px;
+    background: linear-gradient(
+            90deg,
+            rgb(39, 61, 81) 0%,
+            rgb(33, 73, 115) 25%,
+            rgb(34, 96, 152) 50%,
+            rgb(43, 126, 184) 75%,
+            rgb(57, 157, 205) 100%
+    );
+    color: #000;
+}
+
+#content {
+    background: linear-gradient(
+            90deg,
+            rgb(39, 61, 81) 0%,
+            rgb(33, 73, 115) 25%,
+            rgb(34, 96, 152) 50%,
+            rgb(43, 126, 184) 75%,
+            rgb(57, 157, 205) 100%
+    );
+    border-top: solid 6px #212529;
+}
+
+.footer {
+    margin_top: 20px;
+    text-align: center;
+    font-size: 15px;
+    background: linear-gradient(135deg, #202428 50%, #021f3e 100%);
+}
+
+.navbar {
+    background: linear-gradient(135deg, #202428 50%, #021f3e 100%);
+}
+
+.navbar-brand {
+    font-family: "Trebuchet MS", "serif";
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.nav-link {
+    position: relative;
+    transition:
+            color 0.3s ease,
+            filter 0.3s ease;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.nav-link::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #399dcd; /* underline color */
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+/* Login link */
+.login-link {
+    color: #3798c8 !important;
+    text-shadow: 0 0 0 rgba(0, 0, 0, 0) !important;
+}
+
+.login-link::after {
+    background-color: #3798c8; /* underline color */
+}
+
+/* Logout link */
+.logout-link {
+    color: #df5b5b !important;
+    text-shadow: 0 0 0 rgba(0, 0, 0, 0) !important;
+}
+
+.logout-link::after {
+    background-color: #df5b5b;
+}
+
+/* Hover brightness boost */
+.login-link:hover,
+.logout-link:hover {
+    filter: brightness(1.2);
+}
+
+.user-logged {
+    color: #e1e3e3 !important;
+    text-shadow: 3px 3px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.logo {
+    color: #ffffff;
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+.logo:hover {
+    text-shadow: 0 0 6px #399dcd; /* glow effect */
+    transform: scale(1.05);
+}
+
+.pop-nav {
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+.pop-nav:hover {
+    text-shadow: 0 0 6px #399dcd; /* glow effect */
+    transform: scale(1.02);
+}
+
+.pop-nav.active {
+    text-shadow: 0 0 6px #399dcd; /* same as hover glow */
+}
+
+.navbar-toggler-icon {
+    color: #ffffff;
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+.navbar-toggler-icon:hover {
+    text-shadow: 0 0 6px #399dcd; /* glow effect */
+    transform: scale(1.05);
+}
+
+.navbar-toggler {
+    color: #ffffff;
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+.navbar-toggler:hover {
+    text-shadow: 0 0 6px #399dcd; /* glow effect */
+    transform: scale(1.05);
+}
+
+.search-my-pets {
+    height: 100%;
+}
+
+/* Typing Animation */
+@keyframes typing {
+    from {
+        width: 0;
+    }
+    to {
+        width: 50%;
+    }
+}
+
+@keyframes blink {
+    50% {
+        border-color: transparent;
+    }
+}
+
+.typing-text {
+    overflow: hidden;
+    border-right: 3px solid #ffffff;
+    white-space: nowrap;
+    margin: 0 auto;
+    animation:
+            typing 2s steps(30, end),
+            blink 0.75s step-end infinite;
+    display: inline-block;
+}
+
+.pop-text {
+    display: inline-block;
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+.pop-text:hover {
+    transform: scale(1.1);
+}
+
+.pop-text-2 {
+    display: inline-block; /* needed so transform works when applied to an inline element */
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+.pop-text-2:hover {
+    transform: scale(1.1);
+}
+
+.pop-obj {
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+.pop-obj:hover {
+    transform: scale(1.01);
+}
+
+/* Fade-in animation */
+main,
+section {
+    animation: fadeInUp 0.8s ease forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #202428 50%, #021f3e 100%);
+    color: white;
+    padding: 80px 0;
+    margin-top: -20px;
+}
+
+.hero-title {
+    font-size: 56px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
+}
+
+.hero-text {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
+}
+
+/* Carousel Styling */
+.carousel-section {
+    padding: 60px 0;
+    background: linear-gradient(to left, rgb(189, 195, 199), rgb(44, 62, 80));
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.carousel-inner {
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+.carousel-inner:hover {
+    transform: scale(1.02);
+}
+
+.carousel-item img {
+    height: 500px;
+    object-fit: cover;
+    border-radius: 15px;
+}
+
+.carousel-btn {
+    text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.carousel-caption {
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 20px;
+    bottom: 40px;
+}
+
+.carousel-caption h3 {
+    font-size: 32px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* About Section */
+.about-section {
+    background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+    padding: 60px 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.about-text {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.about-card {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+.about-card:hover {
+    transform: translateY(-10px);
+}
+
+.community-impact-section {
+    padding: 60px 0;
+    background: linear-gradient(to left, rgb(189, 195, 199), rgb(44, 62, 80));
+}
+
+/* CTA Section */
+.cta-button {
+    padding: 15px 50px;
+    font-size: 20.8px;
+    border-radius: 50px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+.cta-text {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
+}
+
+/* Stats Section */
+.stats-section {
+    background: #e8e8e8;
+    padding: 60px 0;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 30px;
+    border-radius: 15px;
+    height: 100%;
+    background: linear-gradient(135deg, #202428 50%, #021f3e 100%);
+    color: white;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-10px);
+}
+
+.stat-number {
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 19.2px;
+    margin-top: 10px;
+}
+
+/* Paw Print Background */
+.paw-bg {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="50" opacity="0.05">🐾</text></svg>');
+    background-size: 100px 100px;
+}
+
+.card-hover {
+    transition:
+            text-shadow 0.4s ease,
+            color 0.4s ease,
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+}
+
+/* Card enlarge effect on hover */
+.card-hover:hover {
+    transform: scale(1.03);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #202428 50%, #021f3e 100%);
+}
+
+.card-pd {
+    font-size: 90px;
+}
+
+.pet-name {
+    color: white;
+}
+
+.pg-heading {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Bootstrap icons */
+.bi-search {
+    width: 20px;
+    height: 20px;
+    padding-bottom: 4px;
+    padding-left: 3px;
+}
+
+.bi-eraser-fill {
+    width: 25px;
+    height: 25px;
+    padding-bottom: 4px;
+    padding-left: 4px;
+}
+
+.bi-search-2 {
+    width: 20px;
+    height: 20px;
+    padding-bottom: 4px;
+    padding-right: 5px;
+}
+
+.bi-eraser-fill-2 {
+    width: 25px;
+    height: 25px;
+    padding-bottom: 4px;
+    padding-right: 5px;
+}
+
+.bi-plus {
+    width: 27px;
+    height: 27px;
+    padding-bottom: 4px;
+    padding-left: 5px;
+}
+
+.bi-box-arrow-right {
+    width: 20px;
+    height: 20px;
+    padding-bottom: 2px;
+    padding-left: 5px;
+}
+
+.bi-person {
+    width: 20px;
+    height: 20px;
+    padding-bottom: 2px;
+    padding-right: 5px;
+}
+
+.bi-box-arrow-right-2 {
+    width: 65px;
+    height: 65px;
+    padding-bottom: 6px;
+    padding-left: 14px;
+}
+
+.bi-pencil {
+    width: 20px;
+    height: 20px;
+    padding-bottom: 3px;
+    padding-right: 5px;
+}
+
+/* Text color of page numbers / links */
+.pagination .page-link {
+    color: #ffffff;
+    background-color: #212529;
+    border: 1px solid #212529;
+}
+
+/* Hover effect */
+.pagination .page-link:hover {
+    color: #212529;
+    background-color: #ffffff;
+    border-color: #ffffff;
+}
+
+/* Active page */
+.pagination .page-item.active .page-link {
+    color: #000000;
+    background-color: #3798c8;
+    border-color: #3798c8;
+}
+
+/* Disabled page links */
+.pagination .page-item.disabled .page-link {
+    color: #888888;
+    background-color: #212529;
+    border-color: #212529;
+}

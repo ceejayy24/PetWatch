@@ -1,0 +1,361 @@
+<?php
+/**
+ * Sightings View — Live Search Feature (Views/sightings.phtml)
+ *
+ * Template for the pet sightings listing page with live AJAX search.
+ *
+ * Dual-mode design (graceful degradation):
+ *   - With JavaScript: LiveSearch.js intercepts input events, fires debounced
+ *     AJAX calls to ajax/search.php, and renders results live without page reloads.
+ *     PHP-rendered results (#php-search-results) are hidden; live results
+ *     (#live-search-results) are shown instead.
+ *   - Without JavaScript: the standard POST form submits to sightings.php and
+ *     the PHP-rendered results are displayed normally. No broken experience.
+ *
+ * JavaScript dependencies (loaded at the bottom of this file):
+ *   1. js/AjaxHelper.js  — shared fetch() wrapper (must precede LiveSearch)
+ *   2. js/LiveSearch.js  — live search class
+ *
+ * PHP data passed from sightings.php controller:
+ *   $view->speciesList          — data-driven species dropdown options
+ *   $view->sightingData         — PHP-rendered sighting objects (fallback)
+ *   $view->currentSearch*       — current filter state for form repopulation
+ *   $view->totalSightings/Pages — PHP pagination metadata (fallback)
+ */
+?>
+<?php require('template/header.phtml'); ?>
+
+    <main class="page-content">
+        <div class="container-fluid">
+
+            <!-- Page Heading -->
+            <div class="row">
+                <div id="title" class="col-12 mb-0">
+                    <h1 class="pg-heading text-white fw-bold px-2 py-0 paw-bg">
+                        👀 Latest Sightings
+                    </h1>
+                </div>
+            </div>
+
+            <br>
+
+            <!-- Search and Filter Section
+             This form serves two purposes:
+               1. PHP fallback (no-JS): submits POST to sightings.php as before
+               2. Live search trigger: LiveSearch.js attaches listeners to the
+                  inputs and fires AJAX calls — no page reload needed.
+             The form action/method remain intact for the no-JS path. -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-lg rounded-4 paw-bg">
+                        <div class="card-header text-white shadow"
+                             style="background-color:#212529;border-top-left-radius:15px;border-top-right-radius:15px;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0"><strong>🔍 Search Pet Sightings</strong></h4>
+                                <!-- Live indicator: JS toggles this while a search request is in flight -->
+                                <span id="live-search-indicator" class="badge bg-info text-dark d-none">
+                                ⏳ Searching...
+                            </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <form action="sightings.php" method="POST" id="search-form">
+                                <div class="row g-3">
+
+                                    <!-- Free-text input — LiveSearch debounces keystrokes on this -->
+                                    <div class="col-md-4">
+                                        <label for="searchTerm" class="form-label">Search by Name, Description, or
+                                            Location</label>
+                                        <input type="search" class="form-control rounded-3 shadow-sm pop-obj"
+                                               id="searchTerm" name="searchTerm" placeholder="e.g. Max, fluffy, park…"
+                                               autocomplete="off"
+                                               value="<?= htmlspecialchars($view->currentSearchTerm ?? '') ?>">
+                                    </div>
+
+                                    <!-- Species dropdown -->
+                                    <div class="col">
+                                        <label for="searchSpecies" class="form-label">Species</label>
+                                        <select class="form-select rounded-3 shadow-sm pop-obj" id="searchSpecies"
+                                                name="searchSpecies">
+                                            <option value="">All Species</option>
+                                            <?php foreach ($view->speciesList as $species): ?>
+                                                <option value="<?= htmlspecialchars($species) ?>"
+                                                        <?= ($view->currentSearchSpecies === $species) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($species) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
+                                    <!-- Status filter -->
+                                    <div class="col">
+                                        <label for="searchLostOrFound" class="form-label">Status</label>
+                                        <select class="form-select rounded-3 shadow-sm pop-obj" id="searchLostOrFound"
+                                                name="searchLostOrFound">
+                                            <option value="" <?= ($view->currentSearchLostOrFound === '') ? 'selected' : '' ?>>
+                                                All</option>
+                                            <option value="lost" <?= ($view->currentSearchLostOrFound === 'lost') ? 'selected' : '' ?>>Lost</option>
+                                            <option value="found" <?= ($view->currentSearchLostOrFound === 'found') ? 'selected' : '' ?>>Found</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Sort order -->
+                                    <div class="col">
+                                        <label for="searchOrder" class="form-label">Sort By</label>
+                                        <select class="form-select rounded-3 shadow-sm pop-obj" id="searchOrder"
+                                                name="searchOrder">
+                                            <option value="newest" <?= ($view->currentSearchOrder === 'newest') ? 'selected' : '' ?>>Newest First</option>
+                                            <option value="oldest" <?= ($view->currentSearchOrder === 'oldest') ? 'selected' : '' ?>>Oldest First</option>
+                                            <option value="A-Z" <?= ($view->currentSearchOrder === 'A-Z') ? 'selected' : '' ?>>
+                                                Name (A–Z)</option>
+                                            <option value="Z-A" <?= ($view->currentSearchOrder === 'Z-A') ? 'selected' : '' ?>>
+                                                Name (Z–A)</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Submit button — visible for no-JS users only -->
+                                    <div class="col d-flex align-items-end" id="search-submit-col">
+                                        <button type="submit" name="searchBtn" id="search-submit-btn"
+                                                class="btn btn-primary w-100 rounded-3 shadow pop-obj">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                 fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                                                <path
+                                                        d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+                                            </svg>
+                                            Search
+                                        </button>
+                                    </div>
+
+                                </div><!-- /.row -->
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /.row (search card) -->
+
+            <!-- Results Status Bar
+             Two status lines — JS init shows the live one and hides the PHP one. -->
+            <div class="row mb-3">
+                <div class="col-12 d-flex justify-content-between align-items-center">
+
+                    <!-- JS live status (hidden until JS init runs) -->
+                    <p id="live-search-status" class="text-white mb-0 d-none"></p>
+
+                    <!-- PHP fallback status (hidden by JS after init) -->
+                    <p id="php-search-status" class="text-white mb-0">
+                        <strong><?= $view->totalSightings ?></strong>
+                        sighting<?= ($view->totalSightings !== 1) ? 's' : '' ?> found
+                        <?php if ($view->currentPage > 1): ?>
+                            (Page <?= $view->currentPage ?> of <?= $view->totalPages ?>)
+                        <?php endif; ?>
+                    </p>
+
+                    <a href="sightings.php" class="btn btn-outline-light rounded-4 shadow-sm pop-obj">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             class="bi bi-eraser-fill" viewBox="0 0 16 16">
+                            <path
+                                    d="M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828zm.66 11.34L3.453 8.254 1.914 9.793a1 1 0 0 0 0 1.414l2.5 2.5a1 1 0 0 0 .707.293H7.88a1 1 0 0 0 .707-.293z" />
+                        </svg>
+                        Clear Filters
+                    </a>
+                </div>
+            </div>
+
+            <!-- Live results container (hidden until JS init, then populated by LiveSearch) -->
+            <div id="live-search-results" class="row d-none"></div>
+
+            <!-- PHP fallback results (hidden by JS after init) -->
+            <div id="php-search-results" class="row">
+                <?php if ($view->totalSightings > 0): ?>
+                    <?php foreach ($view->sightingData as $sighting): ?>
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <!-- Click to view this pet on the live map -->
+                            <div class="card card-hover h-100 shadow-lg rounded-5" style="cursor:pointer"
+                                 onclick="window.location.href='map.php?focus=<?= $sighting->getPetId() ?>'">
+
+                                <?php if (!empty($sighting->getPetPhoto())): ?>
+                                    <img src="images/pet-photos/<?= htmlspecialchars($sighting->getPetPhoto()) ?>" class="card-img-top"
+                                         alt="<?= htmlspecialchars($sighting->getPetName()) ?>"
+                                         style="height:250px;object-fit:cover;border-top-left-radius:30px;border-top-right-radius:30px;">
+                                <?php else: ?>
+                                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center text-white"
+                                         style="height:200px;border-top-left-radius:30px;border-top-right-radius:30px;">
+                                        <span class="fs-1">🐾</span>
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="card-header d-flex justify-content-between align-items-start mb-2 bg-light shadow">
+                                    <h5 class="card-title pet-name mb-0">
+                                        <strong><?= htmlspecialchars($sighting->getPetName()) ?></strong>
+                                    </h5>
+                                    <?php
+                                    $status = strtolower($sighting->getPetStatus());
+                                    $statusClass = ($status === 'lost') ? 'rounded-pill bg-danger' : 'rounded-pill bg-success';
+                                    ?>
+                                    <span class="badge <?= $statusClass ?> rounded-3">
+                                    <?= htmlspecialchars(ucfirst($sighting->getPetStatus())) ?>
+                                </span>
+                                </div>
+
+                                <div class="card-body paw-bg">
+                                    <h6 class="text-primary"><strong>Pet Details:</strong></h6>
+                                    <p class="card-text">
+                                        <strong>Species:</strong> <?= htmlspecialchars($sighting->getPetSpecies()) ?><br>
+                                        <?php if (!empty($sighting->getPetBreed())): ?>
+                                            <strong>Breed:</strong> <?= htmlspecialchars($sighting->getPetBreed()) ?><br>
+                                        <?php endif; ?>
+                                        <?php if (!empty($sighting->getPetColor())): ?>
+                                            <strong>Colour:</strong> <?= htmlspecialchars($sighting->getPetColor()) ?><br>
+                                        <?php endif; ?>
+                                        <?php if (!empty($sighting->getPetDescription())): ?>
+                                            <strong>Description:</strong>
+                                            <?= htmlspecialchars(mb_strimwidth($sighting->getPetDescription(), 0, 80, '…')) ?><br>
+                                        <?php endif; ?>
+                                    </p>
+                                    <hr>
+                                    <h6 class="text-primary"><strong>Sighting Information:</strong></h6>
+                                    <p class="card-text">
+                                        <strong>Reported by:</strong> <?= htmlspecialchars($sighting->getReporterUsername()) ?><br>
+                                        <?php if (!empty($sighting->getSightingComment())): ?>
+                                            <strong>Comment:</strong> <?= htmlspecialchars($sighting->getSightingComment()) ?><br>
+                                        <?php endif; ?>
+                                        <strong>Coordinates:</strong>
+                                        <?= htmlspecialchars($sighting->getSightingLatitude()) ?>,
+                                        <?= htmlspecialchars($sighting->getSightingLongitude()) ?><br>
+                                        <strong>Date &amp; Time:</strong> <?= htmlspecialchars($sighting->getSightingTimestamp()) ?>
+                                    </p>
+                                </div>
+
+                                <div class="card-footer d-flex justify-content-between bg-light shadow-lg"
+                                     style="border-bottom-left-radius:30px;border-bottom-right-radius:30px;">
+                                    <small class="text-muted">
+                                        <strong>Owner:</strong> <?= htmlspecialchars($sighting->getOwnerUsername()) ?>
+                                    </small>
+                                    <small class="text-muted">
+                                        <strong>Sighting #<?= htmlspecialchars($sighting->getSightingId()) ?></strong>
+                                    </small>
+                                </div>
+
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="col-12">
+                        <div class="alert alert-info text-center rounded-4 shadow-lg" role="alert">
+                            <h4 class="alert-heading">No Sightings Found</h4>
+                            <p>No pet sightings match your search criteria.</p>
+                            <hr>
+                            <p class="mb-0">
+                                Try adjusting your filters, or
+                                <?php if ($view->user->isLoggedIn()): ?>
+                                    <a href="createsighting.php" class="alert-link">report a new sighting</a>.
+                                <?php else: ?>
+                                    <a href="authenticate.php" class="alert-link">log in to report a sighting</a>.
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div><!-- /#php-search-results -->
+
+            <!-- PHP pagination — hidden by JS after init -->
+            <div id="php-pagination">
+                <?php if ($view->totalPages > 1): ?>
+                    <?php
+                    $paginationParams = http_build_query([
+                            'searchTerm' => $view->currentSearchTerm,
+                            'searchOrder' => $view->currentSearchOrder,
+                            'searchLostOrFound' => $view->currentSearchLostOrFound,
+                            'searchSpecies' => $view->currentSearchSpecies,
+                    ]);
+                    ?>
+                    <div class="row mt-4 mb-5">
+                        <div class="col-12">
+                            <nav aria-label="Sightings pagination">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item <?= $view->currentPage <= 1 ? 'disabled' : '' ?>">
+                                        <a class="page-link rounded-4 me-1 shadow card-hover"
+                                           href="?page=<?= $view->currentPage - 1 ?>&<?= $paginationParams ?>">Previous</a>
+                                    </li>
+                                    <?php for ($i = 1; $i <= $view->totalPages; $i++): ?>
+                                        <?php if ($i === 1 || $i === $view->totalPages || abs($i - $view->currentPage) <= 2): ?>
+                                            <li class="page-item <?= $i === $view->currentPage ? 'active' : '' ?>">
+                                                <a class="page-link rounded-5 mx-1 shadow card-hover"
+                                                   href="?page=<?= $i ?>&<?= $paginationParams ?>"><?= $i ?></a>
+                                            </li>
+                                        <?php elseif (abs($i - $view->currentPage) === 3): ?>
+                                            <li class="page-item disabled">
+                                                <span class="page-link rounded-4 mx-1">…</span>
+                                            </li>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+                                    <li class="page-item <?= $view->currentPage >= $view->totalPages ? 'disabled' : '' ?>">
+                                        <a class="page-link rounded-4 ms-1 shadow card-hover"
+                                           href="?page=<?= $view->currentPage + 1 ?>&<?= $paginationParams ?>">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                            <p class="text-center text-white">
+                                Page <?= $view->currentPage ?> of <?= $view->totalPages ?>
+                                (Showing <?= count($view->sightingData) ?> of <?= $view->totalSightings ?> sightings)
+                            </p>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div><!-- /#php-pagination -->
+
+            <!-- Live pagination container — populated by LiveSearch#renderPagination() -->
+            <div id="live-pagination" class="mt-3 mb-5"></div>
+
+        </div><!-- /.container-fluid -->
+    </main>
+
+    <!-- Scripts: AjaxHelper must load before LiveSearch -->
+    <script src="js/AjaxHelper.js"></script>
+    <script src="js/LiveSearch.js"></script>
+
+    <script>
+        /**
+         * LiveSearch initialisation
+         *
+         * Swaps the page from PHP-rendered results to live AJAX results,
+         * then creates and starts the LiveSearch instance.
+         *
+         * Graceful degradation: if this block fails (JS disabled, script
+         * blocked etc.) the PHP form and results remain fully functional.
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Hide PHP-rendered sections, show live search targets
+            document.getElementById('php-search-results').classList.add('d-none');
+            document.getElementById('php-pagination').classList.add('d-none');
+            document.getElementById('php-search-status').classList.add('d-none');
+            document.getElementById('search-submit-col').classList.add('d-none'); // hide whole col so dropdowns fill the space
+
+            document.getElementById('live-search-results').classList.remove('d-none');
+            document.getElementById('live-search-status').classList.remove('d-none');
+
+            // Create LiveSearch and expose it on window so pagination
+            // onclick handlers (window._liveSearch.goToPage(n)) can reach it
+            window._liveSearch = new LiveSearch({
+                inputId: 'searchTerm',
+                resultsId: 'live-search-results',
+                statusId: 'live-search-status',
+                speciesSelectId: 'searchSpecies',
+                statusSelectId: 'searchLostOrFound',
+                sortSelectId: 'searchOrder',
+                paginationId: 'live-pagination',
+            });
+
+            window._liveSearch.init();
+
+            // Prevent the PHP form from doing a page reload for JS users
+            // (results are already showing live — a form submit would reset everything)
+            const form = document.getElementById('search-form');
+            if (form) {
+                form.addEventListener('submit', (e) => e.preventDefault());
+            }
+        });
+    </script>
+
+<?php require('template/footer.phtml'); ?>

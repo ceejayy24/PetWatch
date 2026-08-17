@@ -1,0 +1,743 @@
+<?php require('template/header.phtml'); ?>
+
+<main class="page-content">
+    <div class="container-fluid">
+
+        <!-- Success/Error Message -->
+        <?php if (!empty($view->message)): ?>
+            <div class="row my-4">
+                <div class="col-12">
+                    <div class="alert alert-info alert-dismissible fade show rounded-4 shadow-lg" role="alert">
+                        <?= htmlspecialchars($view->message) ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <!-- Page Heading -->
+        <div  class="row">
+            <div id="title" class="col-12 mb-0">
+                <h1 class="pg-heading text-white fw-bold px-2 py-0 paw-bg">
+                    🐶 My Pets Dashboard
+                </h1>
+            </div>
+        </div>
+
+        <!-- Page Description and Search Bar -->
+        <br>
+        <div class="row">
+
+            <!-- Page Description -->
+            <div class="col-lg-4 mb-4">
+                <div class="card card-hover shadow-lg rounded-4">
+                    <div class="card-header text-white shadow" style="background-color: #212529; border-top-left-radius: 15px; border-top-right-radius: 15px">
+                        <h4 class="mb-0"><strong>👋 Welcome back, <?= htmlspecialchars($view->user->userName()) ?></strong></h4>
+                    </div>
+                    <div class="card-body card-pd paw-bg">
+                        <h5 class="lead fw-bold mb-0 text-center">
+                            <br>
+                            Manage your pets below. You can add new pets, update their status (lost/found), and view all your registered pets.
+                            Use the search bar and filter tools to find a particular pet.
+                            <br>
+                            <br>
+                        </h5>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Bar and Filters -->
+            <div class="col-lg-8 mb-4">
+                <div class="card search-my-pets shadow-lg rounded-4 paw-bg">
+                    <div class="card-header text-white shadow" style="background-color: #212529; border-top-left-radius: 15px; border-top-right-radius: 15px">
+                        <h4 class="mb-0"><strong>🔍 Search My Pets</strong></h4>
+                    </div>
+                    <div class="card-body d-flex align-items-center">
+                        <form action="mypets.php" method="GET" class="w-100">
+                            <!-- Search -->
+                            <div class="mb-2">
+                                <input type="search"
+                                       name="search"
+                                       id="mp-search-input"
+                                       class="form-control me-2 rounded-3 shadow-sm pop-obj"
+                                       placeholder="Search pets by name, species, breed, status..."
+                                       value="<?= htmlspecialchars($view->searchTerm ?? '') ?>">
+                            </div>
+
+                            <div class="row g-2">
+                                <!-- Filter by Species -->
+                                <div class="col-md-4 mt-3">
+                                    <label for="mp-filter-species" class="form-label">Species</label>
+                                    <select name="species" id="mp-filter-species" class="form-select rounded-3 shadow-sm pop-obj">
+                                        <option value="">All Species</option>
+                                        <option value="Dog"       <?= ($view->filterSpecies ?? '') === 'Dog'       ? 'selected' : '' ?>>Dog</option>
+                                        <option value="Cat"       <?= ($view->filterSpecies ?? '') === 'Cat'       ? 'selected' : '' ?>>Cat</option>
+                                        <option value="Bird"      <?= ($view->filterSpecies ?? '') === 'Bird'      ? 'selected' : '' ?>>Bird</option>
+                                        <option value="Rabbit"    <?= ($view->filterSpecies ?? '') === 'Rabbit'    ? 'selected' : '' ?>>Rabbit</option>
+                                        <option value="Hamster"   <?= ($view->filterSpecies ?? '') === 'Hamster'   ? 'selected' : '' ?>>Hamster</option>
+                                        <option value="Guinea Pig"<?= ($view->filterSpecies ?? '') === 'Guinea Pig'? 'selected' : '' ?>>Guinea Pig</option>
+                                        <option value="Reptile"   <?= ($view->filterSpecies ?? '') === 'Reptile'   ? 'selected' : '' ?>>Reptile</option>
+                                        <option value="Other"     <?= ($view->filterSpecies ?? '') === 'Other'     ? 'selected' : '' ?>>Other</option>
+                                    </select>
+                                </div>
+
+                                <!-- Filter by Status -->
+                                <div class="col-md-4 mt-3">
+                                    <label for="mp-filter-status" class="form-label">Status</label>
+                                    <select name="status" id="mp-filter-status" class="form-select rounded-3 shadow-sm pop-obj">
+                                        <option value="">All</option>
+                                        <option value="lost" <?= $view->filterStatus === 'lost' ? 'selected' : '' ?>>Lost</option>
+                                        <option value="found" <?= $view->filterStatus === 'found' ? 'selected' : '' ?>>Found</option>
+                                    </select>
+                                </div>
+
+                                <!-- Sort By -->
+                                <div class="col-md-4 mt-3">
+                                    <label for="mp-filter-sort" class="form-label">Sort By</label>
+                                    <select name="sort" id="mp-filter-sort" class="form-select rounded-3 shadow-sm pop-obj">
+                                        <option value="date_newest" <?= $view->sortBy === 'date_newest' ? 'selected' : '' ?>>Newest First</option>
+                                        <option value="date_oldest" <?= $view->sortBy === 'date_oldest' ? 'selected' : '' ?>>Oldest First</option>
+                                        <option value="name_asc" <?= $view->sortBy === 'name_asc' ? 'selected' : '' ?>>Name (A-Z)</option>
+                                        <option value="name_desc" <?= $view->sortBy === 'name_desc' ? 'selected' : '' ?>>Name (Z-A)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Search Results Info (JS updates this; PHP version is the fallback) -->
+        <div class="row mb-3">
+            <div class="col-12 d-flex justify-content-between align-items-center">
+                <!-- JS live status — hidden until JS inits -->
+                <p id="mp-live-status" class="text-white d-none"></p>
+                <!-- PHP fallback status -->
+                <p id="mp-php-status" class="text-white">
+                    <?php
+                    $mpFrom = (($view->currentPage - 1) * 6) + 1;
+                    $mpTo   = min($view->currentPage * 6, $view->totalPets);
+                    ?>
+                    Showing <strong><?= $mpFrom ?>–<?= $mpTo ?></strong> of <strong><?= $view->totalPets ?></strong> pet<?= ($view->totalPets !== 1) ? 's' : '' ?>
+                    <?php if (!empty($view->searchTerm) || !empty($view->filterStatus) || !empty($view->filterSpecies ?? '')): ?>
+                        (Filter on)
+                    <?php endif; ?>
+                </p>
+
+                <!-- Clear filters link -->
+                <a href="mypets.php" class="btn btn-outline-light rounded-4 shadow-sm pop-obj">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eraser-fill" viewBox="0 0 16 16">
+                        <path d="M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828zm.66 11.34L3.453 8.254 1.914 9.793a1 1 0 0 0 0 1.414l2.5 2.5a1 1 0 0 0 .707.293H7.88a1 1 0 0 0 .707-.293z"/>
+                    </svg>
+                    Clear Filters
+                </a>
+            </div>
+        </div>
+
+        <!-- Live results container — populated by JS, hidden until init -->
+        <div id="mp-live-results" class="row d-none"></div>
+
+        <!-- PHP fallback pets grid (hidden by JS after init) -->
+        <div id="mp-php-results" class="row">
+
+            <!-- Display Existing Pets -->
+            <?php if (!empty($view->petData)): ?>
+                <?php foreach ($view->petData as $pet): ?>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card card-hover h-100 shadow-lg rounded-5">
+
+                            <!-- Pet Photo — click to view on Live Map -->
+                            <img src="<?= htmlspecialchars($pet->getPhotoPath()) ?>"
+                                 class="card-img-top"
+                                 alt="<?= htmlspecialchars($pet->getPetName()) ?>"
+                                 style="height: 250px; object-fit: cover; border-top-left-radius: 30px; border-top-right-radius: 30px; cursor: pointer;"
+                                 onclick="window.location.href='map.php?focus=<?= $pet->getPetID() ?>'"
+                                 title="View on Live Map">
+
+                            <!-- Card Header (Pet Name and Status Badge) — click to view on Live Map -->
+                            <div class="card-header bg-light shadow"
+                                 style="cursor: pointer;"
+                                 onclick="window.location.href='map.php?focus=<?= $pet->getPetID() ?>'"
+                                 title="View on Live Map">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0 text-white">
+                                        <strong><?= htmlspecialchars($pet->getPetName()) ?></strong>
+                                    </h5>
+                                    <?php
+                                    $status = strtolower($pet->getPetStatus());
+                                    if ($status === 'found')
+                                    {
+                                        echo '<span class="badge rounded-pill bg-success">Found</span>';
+                                    }
+                                    elseif ($status === 'lost')
+                                    {
+                                        echo '<span class="badge rounded-pill bg-danger">Lost</span>';
+                                    }
+                                    ?>
+                                </div>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="card-body paw-bg">
+                                <p class="mb-2">
+                                    <strong>Species:</strong> <?= htmlspecialchars($pet->getPetSpecies()) ?>
+                                </p>
+                                <?php if (!empty($pet->getPetBreed())): ?>
+                                    <p class="mb-2">
+                                        <strong>Breed:</strong> <?= htmlspecialchars($pet->getPetBreed()) ?>
+                                    </p>
+                                <?php endif; ?>
+                                <?php if (!empty($pet->getPetColor())): ?>
+                                    <p class="mb-2">
+                                        <strong>Color:</strong> <?= htmlspecialchars($pet->getPetColor()) ?>
+                                    </p>
+                                <?php endif; ?>
+                                <?php if (!empty($pet->getPetDescription())): ?>
+                                    <p class="mb-2">
+                                        <strong>Description:</strong>
+                                        <?= htmlspecialchars(substr($pet->getPetDescription(), 0, 100)) ?>
+                                        <?= strlen($pet->getPetDescription()) > 100 ? '...' : '' ?>
+                                    </p>
+                                <?php endif; ?>
+                                <p class="mb-2 text-muted">
+                                    <strong>Date Reported:</strong> <?= htmlspecialchars($pet->getDateReported()) ?>
+                                </p>
+
+                                <!-- Update Status Form -->
+                                <hr>
+                                <p><strong>Update Pet Status</strong></p>
+                                <form method="POST" action="mypets.php" class="mb-0">
+                                    <input type="hidden" name="pet_id" value="<?= $pet->getPetID() ?>">
+                                    <div class="row g-2">
+                                        <div class="col-8">
+                                            <select name="new_status" class="form-select form-select-sm rounded-3 shadow-sm pop-obj">
+                                                <option value="lost" <?= $pet->getPetStatus() === 'lost' ? 'selected' : '' ?>>❌ Lost</option>
+                                                <option value="found" <?= $pet->getPetStatus() === 'found' ? 'selected' : '' ?>>✅ Found</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-4">
+                                            <button type="submit" name="updateStatusBtn" class="btn btn-sm btn-primary w-100 rounded-3 shadow-sm pop-obj">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/>
+                                                </svg>Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Card Footer (Pet ID and Delete) -->
+                            <div class="card-footer bg-light shadow-lg" style="border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted"><strong>Pet ID:</strong> <?= $pet->getPetID() ?></small>
+                                    <a href="mypets.php?action=delete&id=<?= $pet->getPetID() ?>"
+                                       class="btn btn-outline-danger shadow-sm pop-obj"
+                                       style="border-bottom-right-radius: 25px;"
+                                       onclick="return confirm('Are you sure you want to delete <?= htmlspecialchars(addslashes($pet->getPetName())) ?>? This action cannot be undone.')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                             class="bi bi-trash" viewBox="0 0 16 16">
+                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                        </svg>
+                                        Delete
+                                    </a>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+
+
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+        </div><!-- /#mp-php-results -->
+
+        <!-- ADD PET -->
+        <div class="row">
+
+            <!-- Add New Pet Card -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-lg rounded-4 paw-bg">
+                    <div class="card-header text-white shadow" style="background-color: #212529; border-top-left-radius: 15px; border-top-right-radius: 15px">
+                        <h5 class="mb-0 pop-obj"><strong>➕ Add New Pet</strong></h5>
+                    </div>
+
+                    <form method="POST" action="mypets.php" enctype="multipart/form-data">
+                        <div class="card-body">
+
+                            <!-- Pet Name -->
+                            <div class="mb-3">
+                                <label for="petName" class="form-label">
+                                    <strong>Pet Name</strong> <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control rounded-3 shadow-sm pop-obj"
+                                       id="petName"
+                                       name="petName"
+                                       placeholder="e.g. Max, Bella"
+                                       required>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="mb-3">
+                                <label for="petstatus" class="form-label">
+                                    <strong>Status</strong> <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select rounded-3 shadow-sm pop-obj" id="petstatus" name="petstatus" required>
+                                    <option value="lost">❌ Lost</option>
+                                    <option value="found">✅ Found</option>
+                                </select>
+                            </div>
+
+                            <!-- Species -->
+                            <div class="mb-3">
+                                <label for="petspecies" class="form-label">
+                                    <strong>Species</strong> <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select rounded-3 shadow-sm pop-obj" id="petspecies" name="petspecies" required>
+                                    <option value="">-- Select Species --</option>
+                                    <option value="Dog">🐶 Dog</option>
+                                    <option value="Cat">😺 Cat</option>
+                                    <option value="Bird">🐦 Bird</option>
+                                    <option value="Rabbit">🐇 Rabbit</option>
+                                    <option value="Hamster">🐹 Hamster</option>
+                                    <option value="Guinea Pig">🐹 Guinea Pig</option>
+                                    <option value="Reptile">🦎 Reptile</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <!-- Breed -->
+                            <div class="mb-3">
+                                <label for="petbreed" class="form-label">
+                                    <strong>Breed</strong> <small class="text-muted">(optional)</small>
+                                </label>
+                                <input type="text"
+                                       class="form-control rounded-3 shadow-sm pop-obj"
+                                       id="petbreed"
+                                       name="petbreed"
+                                       placeholder="e.g. Golden Retriever">
+                            </div>
+
+                            <!-- Color -->
+                            <div class="mb-3">
+                                <label for="petcolor" class="form-label">
+                                    <strong>Color</strong> <small class="text-muted">(optional)</small>
+                                </label>
+                                <input type="text"
+                                       class="form-control rounded-3 shadow-sm pop-obj"
+                                       id="petcolor"
+                                       name="petcolor"
+                                       placeholder="e.g. Brown and white">
+                            </div>
+
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label for="petdescription" class="form-label">
+                                    <strong>Description</strong> <small class="text-muted">(optional)</small>
+                                </label>
+                                <textarea class="form-control rounded-3 shadow-sm pop-obj"
+                                          id="petdescription"
+                                          name="petdescription"
+                                          rows="3"
+                                          placeholder="Any distinguishing features, personality traits, last known location, etc."></textarea>
+                            </div>
+
+                            <!-- Photo Upload -->
+                            <div class="mb-3">
+                                <label for="petphoto" class="form-label">
+                                    <strong>Photo</strong> <span class="text-danger">*</span>
+                                </label>
+                                <input type="file"
+                                       class="form-control rounded-3 shadow-sm pop-obj"
+                                       id="petphoto"
+                                       name="petphoto"
+                                       accept="image/jpeg,image/jpg,image/png,image/gif"
+                                       required>
+                                <div class="form-text">
+                                    Accepted formats: JPG, JPEG, PNG, GIF (Max 5MB)
+                                </div>
+                            </div>
+
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" name="addpetbtn" class="btn btn-success rounded-3 shadow pop-obj"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                                    </svg>
+                                    Add Pet
+                                </button>
+                                <button type="reset" class="btn btn-outline-secondary rounded-3 shadow-sm pop-obj">
+                                    Clear Form
+                                </button>
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- PHP pagination (hidden by JS after init) -->
+        <div id="mp-php-pagination">
+        <?php if ($view->totalPages > 1): ?>
+            <div class="row mt-4 mb-5">
+                <div class="col-12">
+                    <nav aria-label="Pet pagination">
+                        <ul class="pagination justify-content-center">
+                            <!-- Previous Button -->
+                            <li class="page-item <?= $view->currentPage <= 1 ? 'disabled' : '' ?>">
+                                <a class="page-link rounded-5 me-1 shadow card-hover"
+                                   href="?page=<?= $view->currentPage - 1 ?>&search=<?= urlencode($view->searchTerm) ?>&species=<?= urlencode($view->filterSpecies ?? '') ?>&status=<?= urlencode($view->filterStatus) ?>&sort=<?= urlencode($view->sortBy) ?>">
+                                    Previous
+                                </a>
+                            </li>
+
+                            <!-- Page Numbers -->
+                            <?php for ($i = 1; $i <= $view->totalPages; $i++): ?>
+                                <?php if ($i == 1 || $i == $view->totalPages || abs($i - $view->currentPage) <= 2): ?>
+                                    <li class="page-item <?= $i == $view->currentPage ? 'active' : '' ?>">
+                                        <a class="page-link rounded-5 mx-1 shadow card-hover"
+                                           href="?page=<?= $i ?>&search=<?= urlencode($view->searchTerm) ?>&species=<?= urlencode($view->filterSpecies ?? '') ?>&status=<?= urlencode($view->filterStatus) ?>&sort=<?= urlencode($view->sortBy) ?>">
+                                            <?= $i ?>
+                                        </a>
+                                    </li>
+                                <?php elseif (abs($i - $view->currentPage) == 3): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link rounded-5 mx-1">…</span>
+                                    </li>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+
+                            <!-- Next Button -->
+                            <li class="page-item <?= $view->currentPage >= $view->totalPages ? 'disabled' : '' ?>">
+                                <a class="page-link rounded-5 ms-1 shadow card-hover"
+                                   href="?page=<?= $view->currentPage + 1 ?>&search=<?= urlencode($view->searchTerm) ?>&species=<?= urlencode($view->filterSpecies ?? '') ?>&status=<?= urlencode($view->filterStatus) ?>&sort=<?= urlencode($view->sortBy) ?>">
+                                    Next
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+
+
+                </div>
+            </div>
+        <?php endif; ?>
+        </div><!-- /#mp-php-pagination -->
+
+        <!-- Live pagination — rendered by JS -->
+        <div id="mp-live-pagination" class="d-none"></div>
+
+        <!-- No Pets or No Search Results Message -->
+        <?php if (empty($view->petData) && empty($view->searchTerm) && empty($view->filterStatus)): ?>
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-info text-center rounded-4 shadow-lg">
+                        <h4>No Pets Yet</h4>
+                        <p>You haven't added any pets yet. Use the form above to add your first pet!</p>
+                    </div>
+                </div>
+            </div>
+        <?php elseif (empty($view->petData)): ?>
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-warning text-center rounded-4 shadow-lg">
+                        <h4>No Pets Found</h4>
+                        <p>No pets match your search or filter criteria.
+                            <a href="mypets.php" class="alert-link">Clear filters</a> to see all your pets.</p>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+    </div>
+</main>
+
+
+<!-- JSON data for client-side live search — all pets, HTML-escaped by PHP -->
+<script>
+window._mpAllPets = <?= $view->allPetsJson ?? '[]' ?>;
+</script>
+
+<script>
+/**
+ * MyPetsSearch
+ * Client-side live search for the My Pets dashboard.
+ * Filters, sorts and paginates the pet data already embedded in the page
+ * as JSON — no page reloads, no AJAX needed.
+ */
+(function() {
+
+    const PETS_PER_PAGE = 6;
+
+    let currentPage = 1;
+    let filteredPets = [];
+
+    // Elements
+    const searchInput   = document.getElementById('mp-search-input');
+    const speciesSelect = document.getElementById('mp-filter-species');
+    const statusSelect  = document.getElementById('mp-filter-status');
+    const sortSelect    = document.getElementById('mp-filter-sort');
+    const liveResults   = document.getElementById('mp-live-results');
+    const livePagination= document.getElementById('mp-live-pagination');
+    const liveStatus    = document.getElementById('mp-live-status');
+    const phpResults    = document.getElementById('mp-php-results');
+    const phpPagination = document.getElementById('mp-php-pagination');
+    const phpStatus     = document.getElementById('mp-php-status');
+
+    // Bail if elements not found (safety check)
+    if (!searchInput || !liveResults) return;
+
+    // Swap PHP sections for live sections
+    phpResults.classList.add('d-none');
+    phpPagination.classList.add('d-none');
+    phpStatus.classList.add('d-none');
+    liveResults.classList.remove('d-none');
+    livePagination.classList.remove('d-none');
+    liveStatus.classList.remove('d-none');
+
+    // Restore filter state from URL so dropdowns match after a hard navigation
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('species') && speciesSelect) speciesSelect.value = params.get('species');
+    if (params.get('status') && statusSelect) statusSelect.value = params.get('status');
+    if (params.get('sort')   && sortSelect)   sortSelect.value   = params.get('sort');
+    if (params.get('search') && searchInput)  searchInput.value  = params.get('search');
+
+    // Run initial render
+    run();
+
+    // Debounced input listener for the search box
+    let debounceTimer;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => { currentPage = 1; run(); }, 250);
+    });
+
+    // Immediate re-render on dropdown change
+    if (speciesSelect) speciesSelect.addEventListener('change', () => { currentPage = 1; run(); });
+    if (statusSelect) statusSelect.addEventListener('change', () => { currentPage = 1; run(); });
+    if (sortSelect)   sortSelect.addEventListener('change',   () => { currentPage = 1; run(); });
+
+    function run() {
+        const term    = (searchInput.value || '').toLowerCase().trim();
+        const species = speciesSelect ? speciesSelect.value : '';
+        const status  = statusSelect  ? statusSelect.value  : '';
+        const sort    = sortSelect    ? sortSelect.value    : 'date_newest';
+
+        // Filter
+        filteredPets = (window._mpAllPets || []).filter(function(p) {
+            // Split into words — every word must match at least one field
+            const words = term.split(/\s+/).filter(Boolean);
+            const matchTerm = !term || words.every(word =>
+                p.name.toLowerCase().includes(word)        ||
+                p.species.toLowerCase().includes(word)     ||
+                p.breed.toLowerCase().includes(word)       ||
+                p.color.toLowerCase().includes(word)       ||
+                p.description.toLowerCase().includes(word) ||
+                p.status.toLowerCase().includes(word)
+            );
+            const matchSpecies = !species || p.species.toLowerCase() === species.toLowerCase();
+            const matchStatus  = !status  || p.status.toLowerCase() === status.toLowerCase();
+            return matchTerm && matchSpecies && matchStatus;
+        });
+
+        // Sort
+        filteredPets.sort(function(a, b) {
+            switch (sort) {
+                case 'name_asc':    return a.name.localeCompare(b.name);
+                case 'name_desc':   return b.name.localeCompare(a.name);
+                case 'date_oldest': return a.date.localeCompare(b.date);
+                case 'date_newest':
+                default:            return b.date.localeCompare(a.date);
+            }
+        });
+
+        renderPage();
+        renderStatus(term, species, status);
+        renderPagination();
+    }
+
+    function renderPage() {
+        const total  = filteredPets.length;
+        const pages  = Math.max(1, Math.ceil(total / PETS_PER_PAGE));
+        if (currentPage > pages) currentPage = pages;
+
+        const offset = (currentPage - 1) * PETS_PER_PAGE;
+        const page   = filteredPets.slice(offset, offset + PETS_PER_PAGE);
+
+        // Clear and rebuild the results grid
+        liveResults.innerHTML = '';
+
+        if (page.length === 0) {
+            liveResults.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-warning text-center rounded-4 shadow-lg">
+                        <h4>No Pets Found</h4>
+                        <p>No pets match your search or filter criteria.
+                           <a href="mypets.php" class="alert-link">Clear filters</a> to see all your pets.</p>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        page.forEach(function(pet) {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4 mb-4';
+            col.innerHTML = buildCard(pet);
+            fragment.appendChild(col);
+        });
+        liveResults.appendChild(fragment);
+    }
+
+    function buildCard(pet) {
+        const statusBadge = pet.status === 'found'
+            ? '<span class="badge rounded-pill bg-success">Found</span>'
+            : '<span class="badge rounded-pill bg-danger">Lost</span>';
+
+        const desc = pet.description
+            ? `<p class="mb-2"><strong>Description:</strong> ${pet.description.substring(0, 100)}${pet.description.length > 100 ? '...' : ''}</p>`
+            : '';
+
+        return `
+            <div class="card card-hover h-100 shadow-lg rounded-5">
+
+                <!-- Pet Photo -->
+                <img src="${pet.photo_path}"
+                     class="card-img-top"
+                     alt="${pet.name}"
+                     style="height:250px;object-fit:cover;border-top-left-radius:30px;border-top-right-radius:30px;cursor:pointer;"
+                     onclick="window.location.href='map.php?focus=${pet.id}'"
+                     title="View on Live Map">
+
+                <!-- Card Header -->
+                <div class="card-header bg-light shadow"
+                     style="cursor:pointer;"
+                     onclick="window.location.href='map.php?focus=${pet.id}'"
+                     title="View on Live Map">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-white"><strong>${pet.name}</strong></h5>
+                        ${statusBadge}
+                    </div>
+                </div>
+
+                <!-- Card Body -->
+                <div class="card-body paw-bg">
+                    <p class="mb-2"><strong>Species:</strong> ${pet.species}</p>
+                    ${pet.breed  ? `<p class="mb-2"><strong>Breed:</strong> ${pet.breed}</p>`  : ''}
+                    ${pet.color  ? `<p class="mb-2"><strong>Color:</strong> ${pet.color}</p>`  : ''}
+                    ${desc}
+                    <p class="mb-2 text-muted"><strong>Date Reported:</strong> ${pet.date}</p>
+
+                    <!-- Update Status Form -->
+                    <hr>
+                    <p><strong>Update Pet Status</strong></p>
+                    <form method="POST" action="mypets.php" class="mb-0">
+                        <input type="hidden" name="pet_id" value="${pet.id}">
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <select name="new_status" class="form-select form-select-sm rounded-3 shadow-sm pop-obj">
+                                    <option value="lost"  ${pet.status === 'lost'  ? 'selected' : ''}>❌ Lost</option>
+                                    <option value="found" ${pet.status === 'found' ? 'selected' : ''}>✅ Found</option>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" name="updateStatusBtn" class="btn btn-sm btn-primary w-100 rounded-3 shadow-sm pop-obj">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                                        <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/>
+                                    </svg>Update
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Card Footer -->
+                <div class="card-footer bg-light shadow-lg" style="border-bottom-left-radius:30px;border-bottom-right-radius:30px;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted"><strong>Pet ID:</strong> ${pet.id}</small>
+                        <a href="mypets.php?action=delete&id=${pet.id}"
+                           class="btn btn-outline-danger shadow-sm pop-obj"
+                           style="border-bottom-right-radius:25px;"
+                           onclick="return confirm('Are you sure you want to delete ${pet.name}? This action cannot be undone.')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                            </svg>
+                            Delete
+                        </a>
+                    </div>
+                </div>
+
+            </div>`;
+    }
+
+    function renderStatus(term, species, status) {
+        const total = filteredPets.length;
+        if (total === 0 && (term || species || status)) {
+            liveStatus.innerHTML = 'No owned pets found matching your search.';
+            return;
+        }
+        const from  = total === 0 ? 0 : (currentPage - 1) * PETS_PER_PAGE + 1;
+        const to    = Math.min(currentPage * PETS_PER_PAGE, total);
+        const filterNote = (term || species || status) ? ' (Filter on)' : '';
+        liveStatus.innerHTML = `Showing <strong>${from}–${to}</strong> of <strong>${total}</strong> pet${total !== 1 ? 's' : ''}${filterNote}`;
+    }
+
+    function renderPagination() {
+        const total = filteredPets.length;
+        const pages = Math.max(1, Math.ceil(total / PETS_PER_PAGE));
+
+        if (pages <= 1) { livePagination.innerHTML = ''; return; }
+
+        let html = '<div class="row mt-4 mb-5"><div class="col-12"><nav><ul class="pagination justify-content-center">';
+
+        // Previous
+        html += `<li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
+                    <button class="page-link rounded-5 me-1 shadow card-hover"
+                            ${currentPage > 1 ? `onclick="goToPage(${currentPage - 1})"` : ''}>Previous</button>
+                 </li>`;
+
+        // Page numbers
+        for (let i = 1; i <= pages; i++) {
+            if (i === 1 || i === pages || Math.abs(i - currentPage) <= 2) {
+                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                             <button class="page-link rounded-5 mx-1 shadow card-hover"
+                                     onclick="goToPage(${i})">${i}</button>
+                         </li>`;
+            } else if (Math.abs(i - currentPage) === 3) {
+                html += '<li class="page-item disabled"><span class="page-link rounded-5 mx-1">…</span></li>';
+            }
+        }
+
+        // Next
+        html += `<li class="page-item ${currentPage >= pages ? 'disabled' : ''}">
+                    <button class="page-link rounded-5 ms-1 shadow card-hover"
+                            ${currentPage < pages ? `onclick="goToPage(${currentPage + 1})"` : ''}>Next</button>
+                 </li>`;
+
+        html += '</ul></nav></div></div>';
+        livePagination.innerHTML = html;
+    }
+
+    // Exposed globally for pagination button onclick handlers
+    window.goToPage = function(page) {
+        currentPage = page;
+        renderPage();
+        renderStatus(
+            (searchInput.value || '').toLowerCase().trim(),
+            speciesSelect ? speciesSelect.value : '',
+            statusSelect  ? statusSelect.value  : ''
+        );
+        renderPagination();
+        liveResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+})();
+</script>
+<?php require('template/footer.phtml'); ?>

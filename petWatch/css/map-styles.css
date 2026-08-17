@@ -1,0 +1,258 @@
+/*
+ * map-styles.css
+ *
+ * Layout and styling rules specific to the Live Map page (map.php).
+ * Kept separate from my-style.css so these full-height flex rules
+ * only apply on the map page and don't interfere with other pages.
+ *
+ * Layout overview:
+ *   #map-layout  — flex row container filling available viewport height
+ *   #map-sidebar — fixed-width scrollable pet list on the left
+ *   #map-container — Leaflet map fills all remaining horizontal space
+ *
+ * Responsive: on mobile (<= 768px) the layout stacks vertically with
+ * the map on top and a shorter scrollable sidebar below.
+ */
+
+/* Main layout container */
+/*
+ * Height: viewport minus navbar (56px), body padding (50px),
+ * page heading (~52px), footer (~53px), and the extra card header
+ * heights (~40px each × 2 = 80px) plus margins/padding (~40px).
+ * Using a slightly larger buffer of 225px to keep cards on screen.
+ */
+#map-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 16px; /* space between the two cards */
+    height: calc(100vh - 225px);
+    min-height: 420px;
+    margin-bottom: 16px;
+}
+
+/* Sidebar card wrapper */
+#map-sidebar-card {
+    width: 310px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    /* border-radius and shadow come from Bootstrap card classes */
+}
+
+/* Sidebar inner (search + filters + list) */
+#map-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* fill remaining height inside card */
+    background: #1a2535;
+    overflow: hidden;
+    /* bottom corners match card rounding */
+    border-bottom-left-radius: calc(0.375rem - 1px);
+    border-bottom-right-radius: calc(0.375rem - 1px);
+}
+
+/* Sidebar header (search input + filter buttons + status) */
+#sidebar-header {
+    flex-shrink: 0;
+    background: #212b3a;
+    border-bottom: 1px solid #2e3f56 !important;
+}
+
+/* Scrollable pet list */
+#pet-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Thin custom scrollbar */
+#pet-list::-webkit-scrollbar {
+    width: 5px;
+}
+#pet-list::-webkit-scrollbar-track {
+    background: #1a2535;
+}
+#pet-list::-webkit-scrollbar-thumb {
+    background: #3a5068;
+    border-radius: 4px;
+}
+
+/* Map card wrapper */
+#map-map-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Individual pet list items */
+.pet-list-item {
+    border-bottom: 1px solid #2e3f56;
+    cursor: pointer;
+    color: #e0e8f0;
+    transition:
+            background-color 0.15s ease,
+            background-image 0.15s ease,
+            color 0.15s ease;
+}
+
+.pet-list-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* When hovering, text turns dark for readability on light background */
+.pet-list-item:hover .pet-item-name {
+    color: #1c2534 !important;
+}
+.pet-list-item:hover .pet-item-meta {
+    color: #1c2534 !important;
+}
+
+.pet-list-item.active-item {
+    background-color: #e8f4fd !important;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><text x='1' y='60' font-size='60' opacity='0.05'>🐾</text><text x='60' y='50' font-size='38' opacity='0.05'>🐾</text></svg>");
+    background-repeat: repeat;
+    border-left: 3px solid #399dcd;
+}
+.pet-list-item.active-item .pet-item-name,
+.pet-list-item.active-item .pet-item-meta {
+    color: #1c2534 !important;
+}
+
+/* Pet list item inner layout */
+.pet-list-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+}
+
+/* Thumbnail photo circle */
+.pet-list-thumb {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Fallback placeholder circle */
+.pet-list-thumb-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+/* Text block inside each list item */
+.pet-list-info {
+    min-width: 0;
+}
+
+/* Pet name — white by default, dark on hover (handled above) */
+.pet-item-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #e0e8f0;
+}
+
+/* Species/breed — white by default, dark on hover */
+.pet-item-meta {
+    font-size: 0.78rem;
+    color: #c0cfe0;
+}
+
+/* Status badge */
+.pet-item-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    color: white;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+/* Map container (inside the map card) */
+#map-container {
+    flex: 1; /* fills remaining height below the card header */
+    z-index: 1;
+    /* bottom corners match card rounding */
+    border-bottom-left-radius: calc(0.375rem - 1px);
+    border-bottom-right-radius: calc(0.375rem - 1px);
+    overflow: hidden;
+}
+
+/* Leaflet popup tweaks */
+/* Popup styled to match site cards — paw-bg background */
+.leaflet-popup-content-wrapper {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    font-family: "Segoe UI", sans-serif;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="50" opacity="0.05">🐾</text></svg>') !important;
+    background-size: 100px 100px !important;
+}
+
+.leaflet-popup-content {
+    margin: 14px 16px !important;
+    line-height: 1.45;
+}
+
+.leaflet-popup-tip-container {
+    margin-top: -1px;
+}
+
+/* Responsive: mobile stacked layout */
+@media (max-width: 768px) {
+    #map-layout {
+        flex-direction: column;
+        height: auto;
+        gap: 12px;
+    }
+
+    #map-map-card {
+        order: 1; /* Map card on top on mobile */
+        min-height: 55vh;
+    }
+
+    #map-container {
+        min-height: 50vh;
+    }
+
+    #map-sidebar-card {
+        order: 2; /* Sidebar card below map on mobile */
+        width: 100%;
+        height: 40vh;
+    }
+
+    #map-sidebar {
+        width: 100%;
+    }
+}
+
+/* "You are here" geolocation dot pulse animation */
+/*
+ * The blue circle marker placed at the user's geolocation gently pulses
+ * to distinguish it from the pet markers.
+ */
+.leaflet-interactive[style*="fill: rgb(66, 133, 244)"],
+.leaflet-interactive[style*="fill:rgb(66,133,244)"] {
+    animation: geoloc-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes geoloc-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.65;
+    }
+}

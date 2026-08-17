@@ -1,0 +1,263 @@
+<?php require('template/header.phtml'); ?>
+
+    <main class="page-content">
+        <div class="container-fluid">
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-xl-6">
+
+                    <!-- Geolocation error — shown when redirected from the map popup -->
+                    <?php if (isset($_GET['geoloc_error'])): ?>
+                        <br>
+                        <div class="alert alert-warning alert-dismissible fade show rounded-4" role="alert">
+                            <h5 class="alert-heading">📍⚠️ Current location unknown</h5>
+                            <p class="mb-0">Please enter coordinates manually or allow access to current location.</p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Success Message -->
+                    <?php if ($view->success): ?>
+                        <br>
+                        <div class="alert alert-success alert-dismissible fade show rounded-4" role="alert">
+                            <h4 class="alert-heading">✅ Report Submitted!</h4>
+                            <p><?= htmlspecialchars($view->successMessage) ?></p>
+                            <hr>
+                            <p class="mb-0">
+                                <a href="sightings.php" class="alert-link">View all sightings</a> or
+                                <a href="createsighting.php" class="alert-link">report another sighting</a>.
+                            </p>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Error Messages -->
+                    <?php if (!empty($view->errors)): ?>
+                        <br>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <h4 class="alert-heading">❌ Report not submitted. Please fix the following errors:</h4>
+                            <ul class="mb-0">
+                                <?php foreach ($view->errors as $error): ?>
+                                    <li><?= htmlspecialchars($error) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Information Card -->
+                    <br>
+                    <div class="card card-hover shadow-lg mb-4 rounded-4 paw-bg">
+                        <div class="card-header text-white shadow"
+                             style=" background-color: #212529; border-top-left-radius: 15px; border-top-right-radius: 15px">
+                            <h4 class="mb-0"><strong>📍 Report a Pet Sighting</strong></h4>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">
+                                Have you seen a missing pet? Help reunite pets with their owners by reporting your sighting
+                                here.
+                                Please provide as much detail as possible about where and when you saw the pet.
+                                If you are a pet owner, you can also report your registered missing pet by stating where it
+                                was lost or last seen.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Sighting Form -->
+                    <div class="card shadow-lg rounded-4 paw-bg">
+                        <div class="card-body">
+
+                            <form action="createsighting.php" method="POST">
+
+                                <!-- Pet Selection -->
+                                <div class="mb-4">
+                                    <label for="petSearch" class="form-label">
+                                        <strong>Which pet did you see?</strong> <span class="text-danger">*</span>
+                                    </label>
+                                    <!-- Search box to filter the pet dropdown list -->
+                                    <input type="text" id="petSearch" class="form-control rounded-3 shadow-sm mb-2 pop-obj"
+                                           placeholder="Type to search pets by name, species or breed…" autocomplete="off">
+                                    <select class="form-select form-select-lg rounded-3 shadow-sm pop-obj" id="pet_id"
+                                            name="pet_id" size="5" required>
+                                        <option value="">-- Select a missing pet --</option>
+                                        <?php if (!empty($view->missingPets)): ?>
+                                            <?php foreach ($view->missingPets as $pet): ?>
+                                                <option value="<?= $pet->getPetID() ?>"
+                                                        <?= ($view->formData['pet_id'] == $pet->getPetID()) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($pet->getPetName()) ?>
+                                                    - <?= htmlspecialchars($pet->getPetColor()) ?>
+                                                    <?= htmlspecialchars($pet->getPetSpecies()) ?>
+                                                    <?php if ($pet->getPetBreed()): ?>
+                                                        (<?= htmlspecialchars($pet->getPetBreed()) ?>)
+                                                    <?php endif; ?>
+                                                    — Pet ID: <?= htmlspecialchars($pet->getPetID()) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <option value="" disabled>No missing pets currently listed</option>
+                                        <?php endif; ?>
+                                    </select>
+                                    <div class="form-text">
+                                        Select the pet you spotted from the list of missing pets.
+                                    </div>
+                                </div>
+
+                                <!-- Sighting Comment -->
+                                <div class="mb-4">
+                                    <label for="comment" class="form-label">
+                                        <strong>Comment </strong>
+                                        <small class="text-muted">(optional)</small>
+                                    </label>
+                                    <textarea class="form-control rounded-3 shadow-sm pop-obj" id="comment" name="comment"
+                                              rows="5"
+                                              placeholder="Describe where you saw the pet, what it was doing, any identifying features you noticed, etc."
+                                              minlength="10"
+                                              maxlength="500"><?= htmlspecialchars($view->formData['comment']) ?></textarea>
+                                    <div class="form-text">
+                                        Minimum of 10 characters, maximum of 500.
+                                    </div>
+                                </div>
+
+                                <!-- Location Section -->
+                                <div class="card bg-light mb-4 rounded-3 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><strong>📍 Location Coordinates</strong></h5>
+                                        <p class="card-text text-muted small">
+                                            Enter the approximate latitude and longitude where you saw the pet.
+                                        </p>
+
+                                        <div class="row">
+                                            <!-- Latitude -->
+                                            <div class="col-md-6 mb-3">
+                                                <label for="latitude" class="form-label">
+                                                    <strong>Latitude</strong> <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" class="form-control rounded-3 shadow-sm pop-obj"
+                                                       id="latitude" name="latitude" placeholder="e.g. 51.5074"
+                                                       value="<?= htmlspecialchars($view->formData['latitude']) ?>" required>
+                                                <div class="form-text">
+                                                    Range: -90 to 90
+                                                </div>
+                                            </div>
+
+                                            <!-- Longitude -->
+                                            <div class="col-md-6 mb-3">
+                                                <label for="longitude" class="form-label">
+                                                    <strong>Longitude</strong> <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" class="form-control rounded-3 shadow-sm pop-obj"
+                                                       id="longitude" name="longitude" placeholder="e.g. -0.1278"
+                                                       value="<?= htmlspecialchars($view->formData['longitude']) ?>" required>
+                                                <div class="form-text">
+                                                    Range: -180 to 180
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Coordinates Helper -->
+                                        <div class="alert alert-info mb-0 rounded-3 shadow-sm pop-obj">
+                                            <small>
+                                                <strong>Need coordinates?</strong> You can use your
+                                                <a href="#" id="use-current-location">Current Location</a>
+                                                or use online tools like
+                                                <a href="https://www.google.com/maps" target="_blank" rel="noopener">Google
+                                                    Maps</a>
+                                                to find latitude and longitude for a specific location.
+                                            </small>
+                                            <!-- Shown by JS if geolocation is blocked -->
+                                            <div id="geoloc-inline-error" class="text-danger mt-1"
+                                                 style="display:none;font-size:0.8rem;">
+                                                📍⚠️ Current location unknown. Please enter coordinates manually or allow
+                                                access to current location.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="d-grid gap-2">
+                                    <button type="submit" name="createSightingBtn"
+                                            class="btn btn-primary btn-lg rounded-3 shadow pop-obj"
+                                            onclick="return confirm('Are you sure you want to submit this sighting report? Once submitted, it will be publicly visible.')">
+                                        📝 Submit Sighting Report
+                                    </button>
+                                    <a href="sightings.php" class="btn btn-outline-secondary rounded-3 shadow-sm pop-obj">
+                                        Cancel
+                                    </a>
+                                </div>
+
+                            </form>
+
+                        </div>
+                    </div>
+
+                    <!-- Help Text -->
+                    <div class="card card-hover mt-4 border-0 rounded-4 shadow-lg paw-bg">
+                        <div class="card-body">
+                            <h6 class="text-muted"><strong>Tips for Reporting Sightings:</strong></h6>
+                            <ul class="text-muted small">
+                                <li>Report the sighting as soon as possible while details are fresh</li>
+                                <li>Include specific landmarks or street names in your description</li>
+                                <li>Note the time of day you saw the pet</li>
+                                <li>Describe the pet's behavior and condition</li>
+                                <li>If you took a photo, mention it in your description</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <br>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        /* Filter the pet dropdown as the user types in the search box */
+        document.getElementById('petSearch').addEventListener('input', function () {
+            const term = this.value.toLowerCase();
+            const select = document.getElementById('pet_id');
+            const options = select.querySelectorAll('option');
+
+            options.forEach(opt => {
+                // Always keep the placeholder option visible
+                if (!opt.value) { opt.style.display = ''; return; }
+                opt.style.display = opt.text.toLowerCase().includes(term) ? '' : 'none';
+            });
+
+            // Reset selection if the currently selected option is now hidden
+            const selected = select.options[select.selectedIndex];
+            if (selected && selected.style.display === 'none') {
+                select.selectedIndex = 0;
+            }
+        });
+    </script>
+
+
+    <script>
+        /* Fill lat/lng inputs with the user's current GPS location */
+        document.getElementById('use-current-location').addEventListener('click', function (e) {
+            e.preventDefault();
+
+            if (!navigator.geolocation) {
+                document.getElementById('geoloc-inline-error').style.display = 'block';
+                return;
+            }
+
+            this.textContent = 'Getting location…';
+            const link = this;
+
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+                    document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+                    link.textContent = 'Current Location';
+                },
+                function () {
+                    document.getElementById('geoloc-inline-error').style.display = 'block';
+                    link.textContent = 'Current Location';
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        });
+    </script>
+
+<?php require('template/footer.phtml'); ?>

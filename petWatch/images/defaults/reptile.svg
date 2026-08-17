@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <defs><linearGradient id="g"><stop offset="0" stop-color="#22608a"/><stop offset="1" stop-color="#399dcd"/></linearGradient></defs>
+  <rect width="400" height="300" fill="url(#g)" rx="0"/>
+  <text x="200" y="155" font-size="100" text-anchor="middle" dominant-baseline="middle"
+        font-family="Segoe UI Emoji,Apple Color Emoji,sans-serif">🦎</text>
+  <text x="200" y="230" font-size="22" text-anchor="middle" fill="rgba(255,255,255,0.85)"
+        font-family="Segoe UI,sans-serif" font-weight="600">Reptile</text>
+</svg>

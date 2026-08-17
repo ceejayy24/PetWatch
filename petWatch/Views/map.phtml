@@ -1,0 +1,180 @@
+<?php
+/**
+ * Map View — Core Mapping Deliverable (Views/map.phtml)
+ *
+ * Template for the interactive live map page.
+ *
+ * JavaScript dependencies (loaded at the bottom of this file in order):
+ *   1. leaflet.js            — Leaflet map library (via CDN)
+ *   2. leaflet.markercluster — Cluster plugin for 100s of markers (via CDN)
+ *   3. js/AjaxHelper.js      — Shared fetch() wrapper
+ *   4. js/SightingForm.js    — Popup sighting form (must precede PetWatchMap)
+ *   5. js/PetWatchMap.js     — Main map controller class
+ *
+ * PHP data passed from map.php controller:
+ *   $view->user->isLoggedIn() — controls whether sighting form renders in popups
+ *   $view->user->userID()     — passed to PetWatchMap options for AJAX context
+ *
+ * Layout: full-viewport flex row (sidebar + map), responsive stacked on mobile.
+ * Map/sidebar layout CSS lives in css/map-styles.css (kept separate from
+ * my-style.css to avoid affecting other pages).
+ */
+?>
+<?php require('template/header.phtml'); ?>
+
+    <!--
+        Map-specific styles injected here rather than in my-style.css so
+        the layout rules (flex, calc heights, scrollable sidebar) are only
+        applied on this page and don't affect the rest of the site.
+    -->
+    <link rel="stylesheet" href="css/map-styles.css">
+
+    <!--
+        Leaflet.markercluster CSS — must be loaded before the JS.
+        Clusters nearby markers into numbered bubbles to handle 100s of pins.
+        Integrity hash omitted for unpkg URLs as they can change across minor versions.
+    -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
+    <main class="page-content">
+        <div class="container-fluid px-3">
+
+            <!-- Page Heading -->
+            <div class="row">
+                <div id="title" class="col-12 mb-0">
+                    <h1 class="pg-heading text-white fw-bold px-2 py-0 paw-bg">
+                        🗺️ Pet Sightings Live Map
+                    </h1>
+                </div>
+            </div>
+
+            <br>
+
+            <!-- Map layout — sidebar card + map card side by side -->
+            <div id="map-layout">
+
+                <!-- Sidebar Card -->
+                <div id="map-sidebar-card" class="card shadow-lg rounded-4 overflow-hidden">
+
+                    <!-- Card Header -->
+                    <div class="card-header text-white shadow"
+                         style="background-color:#212529;border-top-left-radius:15px;border-top-right-radius:15px;">
+                        <h6 class="fw-bold mb-0">👀📍 View Last Sighting Location</h6>
+                    </div>
+
+                    <!-- Sidebar inner (search + filters + list) -->
+                    <div id="map-sidebar">
+
+                        <!-- Search + filters -->
+                        <div id="sidebar-header" class="p-3 border-bottom">
+
+                            <!-- Search input -->
+                            <input type="search" id="sidebar-search" class="form-control form-control-sm rounded-3 mb-2"
+                                   placeholder="Search pet name or species..." autocomplete="off"
+                                   style="background:#2a3a4f;border:1px solid #3a5068;color:#e0e8f0;">
+
+                            <!-- Status filter buttons (All is default) -->
+                            <div class="btn-group w-100 mb-2" role="group" aria-label="Status filter">
+                                <button type="button" class="btn btn-sm btn-secondary active" id="filter-all"
+                                        onclick="window._petWatchMap && window._petWatchMap.setStatusFilter('', this)">
+                                    All
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-light" id="filter-lost"
+                                        onclick="window._petWatchMap && window._petWatchMap.setStatusFilter('lost', this)">
+                                    Lost
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-light" id="filter-found"
+                                        onclick="window._petWatchMap && window._petWatchMap.setStatusFilter('found', this)">
+                                    Found
+                                </button>
+                            </div>
+
+                            <!-- Loading / count status line -->
+                            <small id="pet-list-status" class="text-white-50">Loading pets...</small>
+                        </div>
+
+                        <!-- Scrollable Pet List — populated by PetWatchMap -->
+                        <div id="pet-list"></div>
+
+                    </div><!-- /#map-sidebar -->
+
+                </div><!-- /#map-sidebar-card -->
+
+                <!-- Map Card -->
+                <div id="map-map-card" class="card shadow-lg rounded-4 overflow-hidden">
+
+                    <!-- Card Header -->
+                    <div class="card-header text-white shadow"
+                         style="background-color:#212529;border-top-left-radius:15px;border-top-right-radius:15px;">
+                        <h6 class="fw-bold mb-0">🗺️ Live Map</h6>
+                    </div>
+
+                    <!-- Leaflet renders into this div -->
+                    <div id="map-container"></div>
+
+                </div><!-- /#map-map-card -->
+
+            </div><!-- /#map-layout -->
+
+        </div><!-- /.container-fluid -->
+    </main>
+
+    <!-- ── Scripts ────────────────────────────────────────────────────────────── -->
+    <!--
+        Load order is strict:
+          1. Leaflet JS (L global must exist before markercluster)
+          2. Leaflet.markercluster (extends L)
+          3. AjaxHelper (used by PetWatchMap and SightingForm)
+          4. SightingForm (used by PetWatchMap — must be defined first)
+          5. PetWatchMap
+          6. Inline init script
+    -->
+
+    <!-- 1. Leaflet JS -->
+    <!-- Leaflet JS — integrity hash omitted for unpkg as hash can vary by CDN edge.
+         The CSS SRI is kept above; JS is loaded without SRI from the same trusted CDN. -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- 2. Leaflet.markercluster -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <!-- 3. AjaxHelper — shared fetch utility used by all other JS classes -->
+    <script src="js/AjaxHelper.js"></script>
+
+    <!-- 4. SightingForm — must be defined before PetWatchMap which instantiates it -->
+    <script src="js/SightingForm.js"></script>
+
+    <!-- 5. PetWatchMap — the main map controller class -->
+    <script src="js/PetWatchMap.js"></script>
+
+    <!-- 6. Initialise the map once the DOM is fully loaded -->
+    <script>
+        /**
+         * Map initialisation
+         *
+         * Creates a PetWatchMap instance and stores it on window._petWatchMap
+         * so the sidebar filter buttons can call public methods on it.
+         *
+         * PHP values are safely interpolated directly into JS here because they
+         * are either booleans or integers — no string injection risk.
+         * String values would need JSON-encoding via json_encode() instead.
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            window._petWatchMap = new PetWatchMap('map-container', {
+                isLoggedIn: <?= $view->user->isLoggedIn() ? 'true' : 'false' ?>,
+                userId: <?= (int) $view->user->userID() ?>,
+                status: '',       // Default: show all pets
+            });
+
+            window._petWatchMap.init();
+        });
+    </script>
+
+    <!-- Bootstrap JS (loaded by footer, but needed before footer on this page too) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
+            crossorigin="anonymous"></script>
+
+    <!-- Footer (outputs closing </main>, footer bar, </body>, </html>) -->
+<?php require('template/footer.phtml'); ?>

@@ -1,0 +1,90 @@
+<?php require('template/header.phtml'); ?>
+
+    <main class="page-content">
+
+        <br>
+        <div class="container-fluid d-flex justify-content-center align-items-center" style="min-height: 75vh;">
+            <div class="login-container shadow-lg p-5 rounded-5"
+                 style="max-width: 400px; width: 100%; background-color: #ffffff;">
+
+                <?php if ($view->user->isLoggedIn()) { ?>
+                    <!-- User is logged in - show welcome and logout -->
+                    <h3 class="text-center mb-4"><strong>Welcome, <?= htmlspecialchars($view->user->userName()); ?>!</strong>
+                    </h3>
+
+                    <p class="text-center text-muted mb-4">You are currently logged in.</p>
+
+                    <!-- Logout Button -->
+                    <form action="authenticate.php" method="GET">
+                        <input type="hidden" name="action" value="logout">
+                        <button type="button" class="btn btn-danger w-100 rounded-4 shadow pop-obj" data-bs-toggle="modal"
+                                data-bs-target="#logoutModal">Logout</button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="index.php#get-started" class="btn btn-link">Return to Home</a>
+                    </div>
+
+                <?php } else { ?>
+                    <!-- User is not logged in - show login form -->
+                    <h3 class="text-center mb-4"><strong>Login</strong></h3>
+
+                    <!-- Display authentication message (e.g. error or success) -->
+                    <?php if (!empty($view->authMessage)): ?>
+                        <p class="text-center mb-3 text-success"><?= htmlspecialchars($view->authMessage); ?></p>
+                    <?php endif; ?>
+
+                    <?php if (!empty($view->errorMessage)): ?>
+                        <p class="text-center mb-3 text-danger"><?= htmlspecialchars($view->errorMessage); ?></p>
+                    <?php endif; ?>
+
+                    <form action="authenticate.php" method="POST">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control rounded-4 shadow-sm pop-obj" id="username" name="username"
+                                   placeholder="username" required>
+                            <label for="username">Username</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control rounded-4 shadow-sm pop-obj" id="password"
+                                   name="password" placeholder="password" required>
+                            <label for="password">Password</label>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input shadow-sm pop-obj" id="botcheck" name="botcheck"
+                                   required>
+                            <label class="form-check-label" for="botcheck">I'm not a robot</label>
+                        </div>
+
+                        <button type="submit" name="loginBtn"
+                                class="btn btn-primary w-100 rounded-4 shadow pop-obj">Login</button>
+                    </form>
+                <?php } ?>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Logout Confirmation Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary rounded-4 shadow-lg">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to log out?
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="authenticate.php?action=logout" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<?php require('template/footer.phtml'); ?>
